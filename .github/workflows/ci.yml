@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: rl
+          POSTGRES_PASSWORD: rl
+          POSTGRES_DB: decisions
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rl -d decisions"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked
+      # TEST_POSTGRES_URL un-skips the real-Postgres round-trip test
+      - run: uv run pytest
+        env:
+          TEST_POSTGRES_URL: postgresql+psycopg://rl:rl@localhost:5432/decisions
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked
+      - name: M3 live verification (proxy pass-through, fail-open, cost ledger)
+        run: uv run python apps/reports/m3_e2e.py
+        env:
+          E2E_SCRATCH: /tmp
+      - name: M4 live verification (reward loop, quality-per-dollar convergence)
+        run: uv run python apps/reports/m4_e2e.py
+        env:
+          E2E_SCRATCH: /tmp

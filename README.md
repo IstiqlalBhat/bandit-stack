@@ -2,8 +2,8 @@
 
 **A contextual-bandit decision engine and an OpenAI-compatible LLM router that learns which model earns its cost — measured on your traffic, not assumed.**
 
+[![CI](https://github.com/IstiqlalBhat/bandit-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/IstiqlalBhat/bandit-stack/actions/workflows/ci.yml)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
-![Tests](https://img.shields.io/badge/tests-126%20passing-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-black)
 ![FastAPI](https://img.shields.io/badge/FastAPI-services-009688)
 
