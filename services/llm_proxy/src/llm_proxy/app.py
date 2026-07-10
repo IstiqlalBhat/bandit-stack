@@ -257,12 +257,17 @@ def create_app(
         return {"ok": True}
 
     @app.get("/readyz")
-    def readyz():
+    async def readyz():
+        shadow = app.state.shadow
+        if not shadow.ready:
+            # self-heal: startup ordering or an engine outage must not brick
+            # readiness — each probe re-attempts provisioning
+            await shadow.prepare()
         body = {
-            "ready": app.state.shadow.ready,
+            "ready": shadow.ready,
             "route_name": config.decision_api.route_name,
         }
-        if app.state.shadow.ready:
+        if shadow.ready:
             return body
         return JSONResponse(body, status_code=503)
 

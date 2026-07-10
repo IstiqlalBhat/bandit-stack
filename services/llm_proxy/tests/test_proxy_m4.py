@@ -225,3 +225,27 @@ class TestJudgeSampling:
         with build_client(tmp_path, judge=judge_cfg(1.0)) as client:
             rid = client.post("/v1/chat/completions", json=REQUEST).headers["x-proxy-request-id"]
             assert client.post("/feedback", json={"request_id": rid, "quality": 1.0}).status_code == 409
+
+
+class TestReadyzRecovery:
+    def test_readyz_recovers_when_decision_api_comes_back(self, tmp_path):
+        # startup provisioning fails (decision API not up yet); the readiness
+        # probe itself must retry, so ordering of service startup never
+        # permanently bricks readiness
+        calls = {"n": 0}
+
+        def flaky(request: httpx.Request) -> httpx.Response:
+            calls["n"] += 1
+            if calls["n"] <= 2:
+                raise httpx.ConnectError("decision api still booting")
+            return decision_handler(request)
+
+        app = create_app(
+            make_config(tmp_path),
+            upstream_transport=httpx.MockTransport(upstream_handler),
+            decision_transport=httpx.MockTransport(flaky),
+        )
+        with TestClient(app) as client:
+            assert client.get("/readyz").status_code == 503  # retried, still down
+            assert client.get("/readyz").status_code == 200  # engine is back
+            assert client.get("/readyz").json()["ready"] is True
