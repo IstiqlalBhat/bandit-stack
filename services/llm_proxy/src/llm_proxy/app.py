@@ -154,7 +154,9 @@ def create_app(
                 timeout=httpx.Timeout(30.0),
                 headers=headers,
             )
-            app.state.judge = JudgeClient(judge_client, config.judge.model)
+            app.state.judge = JudgeClient(
+                judge_client, config.judge.model, extra_body=config.judge.params
+            )
         yield
         await app.state.upstream.aclose()
         await decision_client.aclose()

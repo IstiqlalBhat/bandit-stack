@@ -39,12 +39,14 @@ class TestJsonValidity:
         assert score_json_validity('```json\n{"a": 1}\n```') == 1.0
 
 
-def make_judge(reply: str | Exception) -> JudgeClient:
+def make_judge(reply: str | Exception, seen: list | None = None, **kwargs) -> JudgeClient:
     def handler(request: httpx.Request) -> httpx.Response:
         if isinstance(reply, Exception):
             raise reply
         body = json.loads(request.content)
         assert body["model"] == "judge-1"
+        if seen is not None:
+            seen.append(body)
         return httpx.Response(
             200,
             json={
@@ -57,7 +59,7 @@ def make_judge(reply: str | Exception) -> JudgeClient:
     client = httpx.AsyncClient(
         transport=httpx.MockTransport(handler), base_url="http://judge.test/v1"
     )
-    return JudgeClient(client=client, model="judge-1")
+    return JudgeClient(client=client, model="judge-1", **kwargs)
 
 
 def run(coro):
@@ -84,3 +86,17 @@ class TestJudgeClient:
     def test_transport_error_returns_none(self):
         judge = make_judge(httpx.ConnectError("judge down"))
         assert run(judge.score("q", "r")) is None
+
+    def test_uses_max_completion_tokens_not_max_tokens(self):
+        # reasoning models (gpt-5.x) reject max_tokens outright
+        seen: list = []
+        judge = make_judge("SCORE: 0.7", seen)
+        run(judge.score("q", "r"))
+        assert "max_tokens" not in seen[0]
+        assert seen[0]["max_completion_tokens"] == 512
+
+    def test_extra_body_merges_into_request(self):
+        seen: list = []
+        judge = make_judge("SCORE: 0.7", seen, extra_body={"reasoning_effort": "minimal"})
+        run(judge.score("q", "r"))
+        assert seen[0]["reasoning_effort"] == "minimal"

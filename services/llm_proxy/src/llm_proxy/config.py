@@ -75,6 +75,8 @@ class JudgeConfig(StrictModel):
     model: str
     api_key_env: str | None = None
     sample_rate: float = Field(default=0.1, ge=0, le=1)
+    # merged verbatim into judge requests, e.g. {"reasoning_effort": "minimal"}
+    params: dict | None = None
 
     @property
     def api_key(self) -> str | None:

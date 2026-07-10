@@ -61,16 +61,16 @@ Two products, one compounding core:
 | always-premium | 0.960 | $185 | 5,189 |
 | **bandit-routed** | 0.935 | **$114** | **8,205 (×1.6)** |
 
-**Real OpenAI traffic** (400+ live requests, exact usage-priced ledger — `docs/m6-dogfood-report.txt`):
+**Real OpenAI traffic** (two live runs, 800+ graded requests, exact usage-priced ledgers — `docs/m6-dogfood-report.txt`, `docs/m6-dogfood-gpt55-report.txt`):
 
-| model | measured accuracy | verdict at λ = $0.001/point |
+| pair | measured accuracy | bandit's verdict |
 |---|---|---|
-| gpt-4o-mini | 0.611 | explored 54×, correctly **abandoned** |
-| gpt-4o | 0.882 | converged: 144 of the last 150 requests |
+| gpt-4o-mini vs gpt-4o | 0.611 vs 0.882 | explored mini 54×, **abandoned it** — premium worth 27 points |
+| gpt-5.4-mini vs gpt-5.5 | 0.808 vs 0.993 | tried mini first (19 of the first 25!), measured it, went **149/150 premium** |
 
-Same system, opposite conclusions — because the workloads genuinely differed. That's the point: **it measures, it doesn't guess.** The λ knob (`usd_per_quality_point`) is how you tell it what a quality point is worth to your business; the bandit does the arithmetic from there.
+Same system, three verdicts across three workload/model combinations (the simulated run above went the *other* way). That's the point: **it measures, it doesn't guess.** The λ knob (`usd_per_quality_point`) is how you tell it what a quality point is worth to your business; the bandit does the arithmetic from there — at λ = $0.001 a 7× price gap matters, at λ = $0.01 an 18-point accuracy gap dominates it.
 
-Bonus finding from the live run: a gpt-4o-mini judge agreed with ground truth only 56% of the time (mean deviation 0.45). Cheap judges are noisy — prefer explicit feedback or verifiers where your task allows, and treat judge scores as a sample, not gospel.
+Bonus finding, twice measured: judge quality tracks judge generation. gpt-4o-mini as judge agreed with ground truth 56% (mean deviation 0.45); gpt-5.4-mini agreed 79% (deviation 0.21). Cheap judges are usable but noisy — prefer explicit feedback or verifiers where your task allows, and treat judge scores as a sample, not gospel.
 
 ---
 

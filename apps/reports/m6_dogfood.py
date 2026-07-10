@@ -33,16 +33,23 @@ REPO = Path(__file__).resolve().parents[2]
 SCRATCH = Path(os.environ.get("E2E_SCRATCH", "/tmp"))
 
 DECISION_PORT, PROXY_PORT = 8641, 8642
-ROUTE_NAME = "m6-dogfood"
-CHEAP, PREMIUM = "gpt-4o-mini", "gpt-4o"
-RATES = {CHEAP: (0.15, 0.60), PREMIUM: (2.50, 10.00)}  # usd per mtok in, out
+ROUTE_NAME = os.environ.get("M6_ROUTE_NAME", "m6-dogfood")
+CHEAP = os.environ.get("M6_CHEAP", "gpt-4o-mini")
+PREMIUM = os.environ.get("M6_PREMIUM", "gpt-4o")
+RATES = {  # usd per mtok in, out
+    CHEAP: (float(os.environ.get("M6_CHEAP_IN", "0.15")), float(os.environ.get("M6_CHEAP_OUT", "0.60"))),
+    PREMIUM: (float(os.environ.get("M6_PREMIUM_IN", "2.50")), float(os.environ.get("M6_PREMIUM_OUT", "10.00"))),
+}
+# per-request params; reasoning models need max_completion_tokens + minimal effort
+BODY_PARAMS = json.loads(os.environ.get("M6_BODY_PARAMS", '{"max_tokens": 30}'))
+JUDGE_PARAMS = json.loads(os.environ.get("M6_JUDGE_PARAMS", "null"))
 BASELINE_ROUNDS = 100
 ASSISTED_ROUNDS = 300
 WINDOW = 150
 ABORT_USD = float(os.environ.get("M6_BUDGET_ABORT_USD", "4.50"))
 JUDGE_SAMPLE = 1.0  # judge everything; it only lands where feedback leaves room
 FEEDBACK_SKIP_EVERY = 7  # leave every 7th request to the judge
-USD_PER_QUALITY_POINT = 0.001  # one accuracy point is worth $0.001/request
+USD_PER_QUALITY_POINT = float(os.environ.get("M6_LAMBDA", "0.001"))
 
 
 def canonical_model(versioned: str) -> str:
@@ -186,6 +193,7 @@ def proxy_config(mode: str, default: str, db_name: str, with_judge: bool) -> dic
             "api_key_env": "OPENAI_API_KEY",
             "model": CHEAP,
             "sample_rate": JUDGE_SAMPLE,
+            "params": JUDGE_PARAMS,
         }
     return cfg
 
@@ -246,7 +254,7 @@ def main() -> None:
         for i in range(BASELINE_ROUNDS):
             prompt, expected = make_task(rng, i)
             r = client.post("/v1/chat/completions", json={
-                "model": "auto", "max_tokens": 30,
+                "model": "auto", **BODY_PARAMS,
                 "messages": [{"role": "user", "content": prompt}],
             })
             if r.status_code != 200:
@@ -280,7 +288,7 @@ def main() -> None:
         for i in range(ASSISTED_ROUNDS):
             prompt, expected = make_task(rng, 1000 + i)
             r = client.post("/v1/chat/completions", json={
-                "model": "auto", "max_tokens": 30,
+                "model": "auto", **BODY_PARAMS,
                 "messages": [{"role": "user", "content": prompt}],
             })
             if r.status_code != 200:
@@ -320,7 +328,7 @@ def main() -> None:
         s_ok = 0
         for _ in range(3):
             with client.stream("POST", "/v1/chat/completions", json={
-                "model": "auto", "stream": True, "max_tokens": 30,
+                "model": "auto", "stream": True, **BODY_PARAMS,
                 "messages": [{"role": "user", "content": "Reply with exactly: OK"}],
             }) as resp:
                 raw = b"".join(resp.iter_bytes())

@@ -26,12 +26,18 @@ class JudgeClient:
         client: httpx.AsyncClient,
         model: str,
         rubric: str = RUBRIC,
-        max_tokens: int = 16,
+        max_tokens: int = 512,
+        extra_body: dict | None = None,
     ) -> None:
         self._client = client
         self.model = model
         self.rubric = rubric
+        # max_completion_tokens (not max_tokens): reasoning models reject the
+        # old param, and their hidden reasoning tokens count against this
+        # budget — hence a roomier default than the reply itself needs.
         self.max_tokens = max_tokens
+        # merged verbatim into the request, e.g. {"reasoning_effort": "minimal"}
+        self.extra_body = extra_body or {}
 
     async def score(self, task: str, response: str) -> float | None:
         try:
@@ -39,7 +45,7 @@ class JudgeClient:
                 "/chat/completions",
                 json={
                     "model": self.model,
-                    "max_tokens": self.max_tokens,
+                    "max_completion_tokens": self.max_tokens,
                     "messages": [
                         {"role": "system", "content": self.rubric},
                         {
@@ -47,6 +53,7 @@ class JudgeClient:
                             "content": f"Task:\n{task}\n\nResponse:\n{response}",
                         },
                     ],
+                    **self.extra_body,
                 },
             )
             resp.raise_for_status()
