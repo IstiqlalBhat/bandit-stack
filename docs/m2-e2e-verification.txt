@@ -1,0 +1,25 @@
+true success rates (hidden from all policies): {'haiku': 0.55, 'sonnet': 0.7, 'opus': 0.9}
+
+PHASE 1 — shadow mode: uniform route, 400 rounds
+  logged 400 uniform decisions in 1.0s (pulls: {'haiku': 145, 'sonnet': 134, 'opus': 121})
+  snips(always-haiku   ) = 0.545  (truth 0.55)
+  snips(always-sonnet  ) = 0.687  (truth 0.70)
+  snips(always-opus    ) = 0.893  (truth 0.90)
+  [PASS] shadow OPE recovers every arm's rate: haiku: 0.545 vs 0.55, sonnet: 0.687 vs 0.70, opus: 0.893 vs 0.90
+  [PASS] shadow OPE ranks the arms correctly: opus 0.893 > sonnet 0.687 > haiku 0.545
+
+PHASE 2 — autopilot: Thompson-sampling route, 500 rounds
+  500 decide->reward rounds over live HTTP in 1.1s (903 req/s)
+
+  arm         pulls  share last 200  posterior  truth
+  haiku           6            0.00      0.375   0.55
+  sonnet         11            0.00      0.462   0.70
+  opus          483            1.00      0.901   0.90
+
+verification:
+  [PASS] autopilot converged on best arm: opus share of last 200 rounds = 1.00 (need > 0.70)
+  [PASS] autopilot posterior ranks best arm first: posterior means = [0.375, 0.462, 0.901]
+  [PASS] autopilot OPE recovers best arm's rate: snips(always-opus) = 0.900 vs truth 0.90 (only the well-covered arm is precisely estimable from a converged log)
+  [PASS] persistence: every round logged: n_decisions=500, n_rewards=500
+
+E2E VERIFICATION PASSED

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+data/
+.pytest_cache/
+.hypothesis/
+dist/
+*.egg-info/
+.playwright-mcp/
+.DS_Store
+research/Untitled

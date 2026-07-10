@@ -1,0 +1,37 @@
+starting disposable PostgreSQL via docker compose...
+
+PHASE 1 — operator onboarding (CLI)
+  [PASS] fresh route -> created, exit 0: OK: route 'm5-router' created (id 5de5e0bcf89b403792024cb81ac3340c), arms ['mock-mini', 'mock-opus']
+  [PASS] identical rerun -> reused, exit 0: OK: route 'm5-router' reused (id 5de5e0bcf89b403792024cb81ac3340c), arms ['mock-mini', 'mock-opus'],
+  [PASS] incompatible arms -> exit 2: exit 2: INCOMPATIBLE: route 'm5-router' has incompatible ordered arms; choose a new vers
+  [PASS] decision API down -> exit 3: exit 3: UNREACHABLE: http://127.0.0.1:1: All connection attempts failed
+
+PHASE 2 — startup: readiness + retention pruning
+  [PASS] both proxies healthy and ready (route provisioned): /healthz + /readyz 200
+  [PASS] 90-day-old log row pruned at startup: 0 rows remain after prune
+
+PHASE 3 — auth and role separation
+  [PASS] proxy /v1 rejects missing and wrong keys: missing -> 401, wrong -> 401
+  [PASS] role separation: client key cannot read /admin: client-key -> 401, admin-key -> 200
+  [PASS] decision API requires its own bearer: unauth -> 401, auth -> 200
+
+PHASE 4 — authenticated traffic + judge reward attribution
+  [PASS] 30 non-streaming task requests served: 30/30 ok
+  [PASS] 10 streaming requests pass through: 10/10 ok
+  [PASS] mocked judge scored and posted a reward for every request: 40/40 judged+posted (quality 0.8 mock)
+  [PASS] proxy and decision ledgers agree on rewards: decision n_rewards = 40, proxy rewards_posted = 40
+  [PASS] single-reward invariant: feedback after judge -> 409: second reward attempt -> 409
+
+PHASE 5 — rate limiting (burst=3, 60 rpm)
+  [PASS] burst exhaustion returns 429: codes = [200, 200, 200, 429]
+  [PASS] bucket refills and traffic recovers: after 1.5s -> 200
+
+PHASE 6 — PostgreSQL persistence across decision-api restart
+  [PASS] decision data physically lives in PostgreSQL: routes = 1, decisions = 44
+  [PASS] posterior survives restart byte-for-byte: policy_version 44 preserved
+  [PASS] stack serves after restart: post-restart request -> 200
+
+PHASE 7 — decision outage fail-open
+  [PASS] proxy serves through total decision outage: 10/10 still 200
+
+M5 E2E VERIFICATION PASSED (20 checks)

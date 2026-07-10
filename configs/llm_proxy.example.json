@@ -1,0 +1,46 @@
+{
+  "mode": "shadow",
+  "default_model": "claude-sonnet-5",
+  "models": [
+    {
+      "name": "claude-sonnet-5",
+      "base_url": "https://api.anthropic.com/v1",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "input_usd_per_mtok": 3.0,
+      "output_usd_per_mtok": 15.0
+    },
+    {
+      "name": "claude-haiku-4-5-20251001",
+      "base_url": "https://api.anthropic.com/v1",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "input_usd_per_mtok": 1.0,
+      "output_usd_per_mtok": 5.0
+    },
+    {
+      "name": "gpt-4o-mini",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "input_usd_per_mtok": 0.15,
+      "output_usd_per_mtok": 0.60
+    }
+  ],
+  "decision_api": {
+    "base_url": "http://127.0.0.1:8123",
+    "api_key_env": "DECISION_API_KEY",
+    "route_name": "llm-proxy-shadow"
+  },
+  "auth": {
+    "client_api_key_env": "LLM_PROXY_CLIENT_KEY",
+    "admin_api_key_env": "LLM_PROXY_ADMIN_KEY"
+  },
+  "database_url": "sqlite:///data/llm_proxy.db",
+  "reward": {
+    "usd_per_quality_point": 0.01
+  },
+  "judge": {
+    "base_url": "https://api.anthropic.com/v1",
+    "api_key_env": "ANTHROPIC_API_KEY",
+    "model": "claude-haiku-4-5-20251001",
+    "sample_rate": 0.1
+  }
+}

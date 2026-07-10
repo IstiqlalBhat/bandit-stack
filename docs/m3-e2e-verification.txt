@@ -1,0 +1,27 @@
+all three servers healthy
+
+PHASE A — 30 non-streaming requests
+  [PASS] all served with correct content: 30/30 ok
+  [PASS] model override applied (shadow serves default): 30/30 served mock-mini
+
+PHASE B — 20 streaming requests (10 with include_usage)
+  [PASS] streams pass through intact: 20/20 reassembled to 'Hello world' + [DONE]
+  [PASS] proxy auto-created its shadow route: GET /routes/by-name/llm-proxy-shadow -> 200
+  [PASS] one shadow decision logged per request: n_decisions = 50 (want 50)
+
+PHASE C — decision-api KILLED, 20 more requests (fail-open)
+  [PASS] all requests survive decision-api outage: 20/20 still 200 with content
+
+PHASE D — upstream 500 passes through
+  [PASS] upstream error surfaced verbatim: status 500, body '{"error":{"message":"upstream boom"}}'
+
+PHASE E — cost ledger reconciliation
+  [PASS] every request logged: n_requests = 71 (want 71)
+  [PASS] total cost matches first-principles ledger: 0.0003075000 vs expected 0.0003075000
+  [PASS] all traffic served by default model: served = {'mock-mini': 71}
+  [PASS] shadow picks recorded while engine was up: shadow picks = {'mock-mini': 26, 'mock-opus': 24} (sum 50, want 50)
+  [PASS] both arms explored by shadow policy: arms seen: ['mock-mini', 'mock-opus']
+  [PASS] fail-open requests logged without shadow: shadow_missing = 21 (want 20 outage + 1 error-path)
+  [PASS] logs carry latency + propensity fields: latencies: [0.7, 0.7, 0.7, 0.7, 0.7]
+
+M3 E2E VERIFICATION PASSED (14 checks)

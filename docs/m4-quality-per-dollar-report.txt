@@ -1,0 +1,30 @@
+PHASE 1 — baseline: always mock-opus, 150 task requests
+  quality 0.960, cost/request $0.000185
+  [PASS] baseline served only the premium model: served = {'mock-opus': 150}
+
+PHASE 2 — assisted: bandit routes, 700 rounds with feedback
+  700 decide->serve->score->feedback loops in 4.0s
+
+  served mix over all 700 rounds: {'mock-sonnet': 630, 'mock-mini': 45, 'mock-opus': 25}
+  last 200: mix {'mock-sonnet': 191, 'mock-mini': 7, 'mock-opus': 2}, quality 0.915, cost/request $0.000108
+
+verification:
+  [PASS] bandit converged on quality-per-dollar optimum (mock-sonnet): sonnet share of last 200 = 0.95 (need > 0.60)
+  [PASS] feedback posted a reward for (nearly) every round: 700/700 rewards posted
+  [PASS] proxy ledger agrees: proxy rewards_posted = 700
+  [PASS] decision engine received exactly those rewards: decision-api n_rewards = 700
+  [PASS] decision engine logged every decision (both phases): n_decisions = 850
+  [PASS] composite reward math verified on a logged entry: reward 0.778000 == clamp(q 1.0 - cost/U 0.2220)
+  [PASS] quality held within 0.08 of always-premium: 0.915 vs baseline 0.960
+  [PASS] cost per request cut by ≥ 30%: $0.000108 vs baseline $0.000185 (42% saved)
+
+==============================================================
+QUALITY-PER-DOLLAR REPORT (mock task traffic)
+==============================================================
+strategy                      quality   $/request  $/1M req  quality/$
+always-premium (baseline)       0.960    0.000185       185       5189
+bandit-routed (last 200)        0.915    0.000108       108       8470
+
+cost reduction: 42%   quality delta: -0.045   quality-per-dollar: x1.6
+
+M4 E2E VERIFICATION PASSED (9 checks)

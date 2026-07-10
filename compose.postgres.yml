@@ -1,0 +1,21 @@
+# Disposable PostgreSQL for live verification (m5_e2e.py) and local dev.
+# Data lives on tmpfs — `down -v` leaves nothing behind.
+#
+#   M5_PG_PORT=55432 docker compose -f compose.postgres.yml -p m5pg up -d --wait
+#   docker compose -f compose.postgres.yml -p m5pg down -v --remove-orphans
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: rl
+      POSTGRES_PASSWORD: rl
+      POSTGRES_DB: decisions
+    ports:
+      - "127.0.0.1:${M5_PG_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rl -d decisions"]
+      interval: 1s
+      timeout: 2s
+      retries: 60

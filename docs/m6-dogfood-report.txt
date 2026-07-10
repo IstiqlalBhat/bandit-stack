@@ -1,0 +1,49 @@
+PHASE A — baseline: shadow mode, 100% gpt-4o, 100 real requests
+  25/100  accuracy so far 0.80  spent $0.0023
+  50/100  accuracy so far 0.84  spent $0.0047
+  75/100  accuracy so far 0.88  spent $0.0070
+  100/100  accuracy so far 0.89  spent $0.0093
+  baseline done in 60s: accuracy 0.890, $0.000093/req, total $0.0093
+  [PASS] baseline served 100% premium: served = {'gpt-4o': 100}
+
+PHASE B — assisted: bandit routes gpt-4o-mini vs gpt-4o, 300 real requests + feedback (judge on 100%)
+  25/300  last-25 mix {'gpt-4o-mini': 14, 'gpt-4o': 11}  spent $0.0113
+  50/300  last-25 mix {'gpt-4o-mini': 9, 'gpt-4o': 16}  spent $0.0137
+  75/300  last-25 mix {'gpt-4o-mini': 13, 'gpt-4o': 12}  spent $0.0158
+  100/300  last-25 mix {'gpt-4o-mini': 4, 'gpt-4o': 21}  spent $0.0187
+  125/300  last-25 mix {'gpt-4o-mini': 6, 'gpt-4o': 19}  spent $0.0213
+  150/300  last-25 mix {'gpt-4o-mini': 2, 'gpt-4o': 23}  spent $0.0244
+  175/300  last-25 mix {'gpt-4o-mini': 2, 'gpt-4o': 23}  spent $0.0275
+  200/300  last-25 mix {'gpt-4o-mini': 1, 'gpt-4o': 24}  spent $0.0307
+  225/300  last-25 mix {'gpt-4o-mini': 0, 'gpt-4o': 25}  spent $0.0339
+  250/300  last-25 mix {'gpt-4o-mini': 1, 'gpt-4o': 24}  spent $0.0371
+  275/300  last-25 mix {'gpt-4o-mini': 1, 'gpt-4o': 24}  spent $0.0402
+  300/300  last-25 mix {'gpt-4o-mini': 1, 'gpt-4o': 24}  spent $0.0433
+  [PASS] real-provider streaming passes through: 3/3 streams ok
+  assisted done in 171s
+
+verification:
+  [PASS] every assisted request logged with cost: n_requests = 303
+  [PASS] ledgers agree (proxy rewards == decision rewards): decision = 301, proxy = 301
+  [PASS] single-reward invariant held under real judge latency: 301 rewards for 303 requests (feedback + judge, 0 judge-won races, zero double-posts)
+  [PASS] real judge scored the feedback-free slice: 44 judged (expected ~42 + streams; 0 judge-won claim races on feedbacked traffic)
+  [PASS] bandit concentrated on one arm: gpt-4o = 144/150 of the last 150
+  [PASS] hard cap respected ($4.5 abort line, $5 approved): grand total $0.0345
+
+==================================================================
+M6 DOGFOOD — QUALITY PER DOLLAR ON REAL OPENAI TRAFFIC
+==================================================================
+strategy                       accuracy   $/request  $/1M req  quality/$
+always-gpt-4o (baseline)          0.890    0.000093        93       9534
+bandit-routed (last 150)          0.860    0.000092        92       9397
+
+mix all 300 rounds: {'gpt-4o-mini': 54, 'gpt-4o': 246}   last 150: {'gpt-4o-mini': 6, 'gpt-4o': 144}
+  gpt-4o-mini: 54 pulls, measured accuracy 0.611
+  gpt-4o: 246 pulls, measured accuracy 0.882
+reward tradeoff: 1 accuracy point valued at $0.001/request (cost penalties: gpt-4o-mini 0.0120, gpt-4o ~0.093 quality points)
+cost reduction vs baseline: 2%   accuracy delta: -0.030   quality-per-dollar: x1.0
+judge vs ground truth on 43 sampled requests: 56% agreement, mean |deviation| 0.45
+
+REAL SPEND: phase A $0.0093 + phase B $0.0237 + judge ~$0.0015 = $0.0345 of $5.00 approved
+
+M6 DOGFOOD PASSED (8 checks)
